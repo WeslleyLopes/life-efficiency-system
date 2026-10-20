@@ -34,6 +34,7 @@ require_once __DIR__ . '/../includes/header.php';
         <div class="regra-linha"><span class="regra-tag" style="--cor:#38bdf8">Acoes / BDR / FII / ETF</span> <?php echo icone('link', 16); ?> conta <strong>Investimento</strong></div>
         <div class="regra-linha"><span class="regra-tag" style="--cor:#22c55e">Indices / Futuros (IND, WIN, WDO...)</span> <?php echo icone('link', 16); ?> conta <strong>Trading</strong></div>
         <p class="muted">Regras editaveis em Cadastros. O saldo atual de cada conta e informado em Cadastros; os lancamentos importados usam as datas para reconstruir o historico, sem somar valores antigos de novo.</p>
+        <p><a class="btn btn-neutro btn-mini" href="/ranksistem/pages/financeiro-analise.php"><?php echo icone('grafico', 16); ?> Analisar historico importado</a></p>
     </div>
     <?php
     $conteudo = ob_get_clean();
@@ -54,8 +55,8 @@ require_once __DIR__ . '/../includes/header.php';
                 . '<div class="conta-info"><span class="conta-tipo">' . e($c['tipo']) . '</span><strong>' . e($c['nome']) . '</strong>'
                 . '<span class="conta-data">' . ($c['data_saldo'] ? 'saldo de ' . date('d/m/Y', strtotime($c['data_saldo'])) : 'saldo atual') . '</span></div>'
                 . '<div class="conta-valores">'
-                . '<span class="conta-saldo">R$ ' . number_format((float)$c['saldo_atual'], 2, ',', '.') . '</span>'
-                . '<span class="conta-delta ' . ($deltaR >= 0 ? 'up' : 'down') . '">' . ($deltaR >= 0 ? '+' : '-') . 'R$ ' . number_format(abs($deltaR), 2, ',', '.') . ' · ' . ($ind['variacao_pct'] >= 0 ? '+' : '') . number_format($ind['variacao_pct'], 2, ',', '.') . '%</span>'
+                . '<span class="conta-saldo abs">R$ ' . number_format((float)$c['saldo_atual'], 2, ',', '.') . '</span>'
+                . '<span class="conta-delta ' . ($deltaR >= 0 ? 'up' : 'down') . '"><span class="abs">' . ($deltaR >= 0 ? '+' : '-') . 'R$ ' . number_format(abs($deltaR), 2, ',', '.') . '</span> · ' . ($ind['variacao_pct'] >= 0 ? '+' : '') . number_format($ind['variacao_pct'], 2, ',', '.') . '%</span>'
                 . '</div>'
                 . '<div class="conta-indice"><span class="indice-num">' . number_format($ind['indice'], 1, ',', '.') . '</span><span class="indice-legenda">indice</span></div>'
                 . '</div>';
@@ -82,7 +83,7 @@ require_once __DIR__ . '/../includes/header.php';
                 . '<span class="ativo-pos" style="color:' . ($pos >= 0 ? '#22c55e' : '#f87171') . '">' . number_format($pos, 2, ',', '.') . '</span></div>'
                 . '<span class="ativo-nome" title="' . e($a['ativo_nome']) . '">' . e($a['ativo_nome']) . '</span>'
                 . '<div class="ativo-meta">' . badge($rotuloClasse[$a['classe']], $cor)
-                . '<span>R$ ' . number_format((float)$a['financeiro'], 2, ',', '.') . '</span>'
+                . '<span class="abs">R$ ' . number_format((float)$a['financeiro'], 2, ',', '.') . '</span>'
                 . '<span>' . (int)$a['movimentos'] . ' mov.</span></div>'
                 . '</div>';
         }
@@ -108,8 +109,8 @@ require_once __DIR__ . '/../includes/header.php';
                 . '<td>' . date('d/m/Y H:i', strtotime($im['criado_em'])) . '</td>'
                 . '<td>' . (int)$im['total_linhas'] . '</td>'
                 . '<td>' . (int)$im['importadas'] . '</td>'
-                . '<td style="color:#86efac">R$ ' . number_format((float)$im['credito_total'], 2, ',', '.') . '</td>'
-                . '<td style="color:#fca5a5">R$ ' . number_format((float)$im['debito_total'], 2, ',', '.') . '</td>'
+                . '<td style="color:#86efac"><span class="abs">R$ ' . number_format((float)$im['credito_total'], 2, ',', '.') . '</span></td>'
+                . '<td style="color:#fca5a5"><span class="abs">R$ ' . number_format((float)$im['debito_total'], 2, ',', '.') . '</span></td>'
                 . '<td><a class="link-mini danger" href="/ranksistem/controllers/financeiroController.php?acao=del_importacao&id=' . (int)$im['id'] . '" onclick="return confirm(\'Desfazer esta importacao? Os lancamentos serao removidos e o saldo atual nao muda.\')">Desfazer</a></td>'
                 . '</tr>';
         }
@@ -134,12 +135,13 @@ require_once __DIR__ . '/../includes/header.php';
             badge($rotuloClasse[$m['classe']], $corClasse),
             e($m['conta_nome']),
             number_format((float)$m['quantidade'], 2, ',', '.'),
-            'R$ ' . number_format((float)$m['preco_unitario'], 2, ',', '.'),
-            'R$ ' . number_format((float)$m['valor_total'], 2, ',', '.'),
-            e($m['corretora'])
+            '<span class="abs">R$ ' . number_format((float)$m['preco_unitario'], 2, ',', '.') . '</span>',
+            '<span class="abs">R$ ' . number_format((float)$m['valor_total'], 2, ',', '.') . '</span>',
+            e($m['corretora']),
+            '<a class="link-mini danger" href="/ranksistem/controllers/financeiroController.php?acao=del_lancamento&id=' . (int)$m['id'] . '" onclick="return confirm(\'Excluir este lancamento? A carteira e a analise serao recalculadas (o saldo atual nao muda).\')">Excluir</a>'
         );
     }
-    tabela(array('Data', 'Tipo', 'Ativo', 'Classe', 'Conta', 'Qtd', 'Preco', 'Total', 'Corretora'), $rows, 'Nenhum lancamento importado.', array('data_table' => true, 'id' => 'tabelaLancamentos', 'placeholder' => 'Pesquisar por ativo, corretora, conta...'));
+    tabela(array('Data', 'Tipo', 'Ativo', 'Classe', 'Conta', 'Qtd', 'Preco', 'Total', 'Corretora', 'Acao'), $rows, 'Nenhum lancamento importado.', array('data_table' => true, 'id' => 'tabelaLancamentos', 'placeholder' => 'Pesquisar por ativo, corretora, conta...', 'busca' => isset($_GET['q']) ? trim((string)$_GET['q']) : ''));
     $conteudo = ob_get_clean();
     card_bloco('Lancamentos importados', $conteudo, '#2dd4bf', 'grafico');
     ?>

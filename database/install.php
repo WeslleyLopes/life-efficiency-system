@@ -236,6 +236,44 @@ try {
         status ENUM('ativo','concluido','cancelado') NOT NULL DEFAULT 'ativo'
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
 
+    // ---------- Metas / ciclo operacional ----------
+    $tabelas[] = "CREATE TABLE IF NOT EXISTS metas (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        pilar ENUM('financeiro','academico','fisico','social','cross') NOT NULL DEFAULT 'cross',
+        titulo VARCHAR(150) NOT NULL,
+        descricao TEXT,
+        etapa ENUM('diagnosticar','priorizar','planejar','executar','avaliar','aprender') NOT NULL DEFAULT 'planejar',
+        prioridade TINYINT NOT NULL DEFAULT 2,
+        esforco ENUM('baixo','medio','alto') NOT NULL DEFAULT 'medio',
+        prazo DATE DEFAULT NULL,
+        indicador VARCHAR(255) DEFAULT NULL,
+        baseline DECIMAL(8,2) DEFAULT NULL,
+        alvo DECIMAL(8,2) DEFAULT NULL,
+        unidade VARCHAR(30) DEFAULT NULL,
+        status ENUM('ativa','concluida','abandonada') NOT NULL DEFAULT 'ativa',
+        resultado TEXT,
+        criado_em DATETIME DEFAULT CURRENT_TIMESTAMP,
+        atualizado_em DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
+
+    // ---------- Motor de diagnostico (historico de recomendacoes) ----------
+    $tabelas[] = "CREATE TABLE IF NOT EXISTS diagnosticos (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        chave VARCHAR(140) NOT NULL UNIQUE,
+        tipo ENUM('desvio_meta','padrao_identificado','dados_insuficientes','melhoria_sustentada') NOT NULL,
+        pilar ENUM('financeiro','academico','fisico','social','global') NOT NULL DEFAULT 'global',
+        metrica VARCHAR(120) NOT NULL,
+        periodo VARCHAR(80) DEFAULT NULL,
+        comparacao VARCHAR(200) DEFAULT NULL,
+        mensagem TEXT,
+        confianca ENUM('baixa','media','alta') NOT NULL DEFAULT 'baixa',
+        acao_sugerida VARCHAR(255) DEFAULT NULL,
+        registros_ref VARCHAR(200) DEFAULT NULL,
+        status ENUM('aberto','aceito','resolvido','ignorado') NOT NULL DEFAULT 'aberto',
+        criado_em DATETIME DEFAULT CURRENT_TIMESTAMP,
+        atualizado_em DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
+
     foreach ($tabelas as $sql) {
         if (!$mysqli->query($sql)) {
             throw new Exception('Erro ao criar tabela: ' . $mysqli->error);
@@ -247,6 +285,10 @@ try {
     $colunasNovas = array(
         'financeiro_contas' => array(
             'data_saldo' => "ALTER TABLE financeiro_contas ADD COLUMN data_saldo DATE DEFAULT NULL AFTER saldo_atual",
+        ),
+        'financeiro_setups' => array(
+            'versao' => "ALTER TABLE financeiro_setups ADD COLUMN versao INT NOT NULL DEFAULT 1 AFTER regras",
+            'atualizado_em' => "ALTER TABLE financeiro_setups ADD COLUMN atualizado_em DATETIME DEFAULT CURRENT_TIMESTAMP",
         ),
     );
     foreach ($colunasNovas as $tabela => $cols) {

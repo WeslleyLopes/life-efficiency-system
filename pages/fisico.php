@@ -126,7 +126,7 @@ require_once __DIR__ . '/../includes/header.php';
             '<a class="link-del" href="/ranksistem/controllers/fisicoController.php?acao=del_treino&id=' . (int)$t['id'] . '" onclick="return confirm(\'Remover treino?\')">' . icone('lixo', 16) . '</a>'
         );
     }
-    tabela(array('Data', 'Energia', 'Sono', 'Dor', 'Volume', 'Obs.', ''), $rows);
+    tabela(array('Data', 'Energia', 'Sono', 'Dor', 'Volume', 'Obs.', ''), $rows, 'Nenhum treino registrado.', array('data_table' => true, 'id' => 'tabelaTreinos', 'placeholder' => 'Pesquisar por data, energia, observacao...', 'busca' => isset($_GET['q']) ? trim((string)$_GET['q']) : ''));
     $conteudo = ob_get_clean();
     card_bloco('Treinos recentes', $conteudo, '#fb923c', 'halter');
     ?>

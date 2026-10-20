@@ -16,3 +16,6 @@ require_once APP_ROOT . '/includes/helpers/fisico_helper.php';
 require_once APP_ROOT . '/includes/helpers/social_helper.php';
 require_once APP_ROOT . '/includes/helpers/scoring_helper.php';
 require_once APP_ROOT . '/includes/helpers/correlacao_helper.php';
+require_once APP_ROOT . '/includes/helpers/meta_helper.php';
+require_once APP_ROOT . '/includes/helpers/diagnostico_helper.php';
+require_once APP_ROOT . '/includes/helpers/analise_importados_helper.php';

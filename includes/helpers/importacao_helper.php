@@ -77,6 +77,12 @@ function fin_classificar_ativo($codigo)
             if (strpos($codigo, strtoupper($p)) === 0) { return $r['classe']; }
         }
     }
+
+    // Fallback antes do padrao 'acao': a planilha traz "Futuro - WING26"
+    // (codigo=Futuro e nome=contrato); tambem reconhece o codigo do contrato
+    // direto (WING26, BITV25...) e indices com ^ no arquivo de origem.
+    if ($codigo === 'FUTURO') { return 'indice'; }
+    if (preg_match('/^[A-Z]{3}[FGHJKMNQUVXZ]\d{2}$/', $codigo)) { return 'indice'; }
     return 'acao';
 }
 

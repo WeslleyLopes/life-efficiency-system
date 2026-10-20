@@ -2,16 +2,26 @@
 require_once __DIR__ . '/../config.php';
 
 $page_title = 'Visao Geral';
-$page_sub = 'Seu medidor de eficiencia entre os quatro pilares';
+$page_sub = 'Diagnostico, evolucao e prioridade da proxima melhoria';
 $active = 'dashboard';
 
 salvar_pilar_scores();
+diag_gerar();
 
 $scores = score_pilares();
 $global = score_global($scores);
 $cores = pilar_cores();
 $labels = pilar_labels();
 $icones = pilar_icones();
+
+// KPIs executivos
+$pesos = score_pesos();
+$metasStats = metas_stats();
+$consistencia = consistencia_global();
+$qualidade = qualidade_dados(30);
+$tendencia = score_tendencia(7);
+$resumoDiag = diag_resumo();
+$proximas = metas_proximas(4);
 
 // Delta do dia vs ultimo registro anterior
 $historico = pilar_scores_historico(60);
@@ -34,7 +44,6 @@ foreach ($porPilar as $pilar => $serie) {
 }
 
 // Serie global por dia (media ponderada)
-$pesos = score_pesos();
 $somaPesos = array_sum($pesos) ?: 1;
 $mapa = array();
 foreach ($historico as $h) {
@@ -66,8 +75,14 @@ require_once __DIR__ . '/../includes/header.php';
 
 <section class="grid grid-hero">
     <div class="card card-global" style="--cor:<?php echo score_cor($global); ?>">
-        <span class="global-titulo">Score Global de Eficiencia</span>
+        <span class="global-titulo">Eficiencia global</span>
         <?php gauge($global, score_cor($global), 'da meta', 200); ?>
+        <div class="tendencia tendencia-<?php echo e($tendencia['classe']); ?>">
+            <?php echo $tendencia['icone']; ?> <?php echo e($tendencia['rotulo']); ?>
+            <?php if ($tendencia['delta'] !== null): ?>
+                <span>(<?php echo ($tendencia['delta'] >= 0 ? '+' : '') . number_format($tendencia['delta'], 1, ',', '.'); ?> pts vs 7 dias anteriores)</span>
+            <?php endif; ?>
+        </div>
         <div class="global-pesos">
             <?php foreach ($scores as $pilar => $v): ?>
                 <span class="peso-chip" style="--cor:<?php echo $cores[$pilar]; ?>">
@@ -91,9 +106,88 @@ require_once __DIR__ . '/../includes/header.php';
                 ));
                 barra_progresso($v, $cores[$pilar]);
                 ?>
+                <a class="link-mini" href="/ranksistem/pages/<?php echo $pilar; ?>.php">investigar registros &rarr;</a>
             </div>
         <?php endforeach; ?>
     </div>
+</section>
+
+<section class="grid grid-stats">
+    <?php
+    card_stat(array(
+        'titulo' => 'Eficiencia global',
+        'valor' => number_format($global, 1, ',', '.') . '/100',
+        'sub' => 'media ponderada dos 4 pilares',
+        'cor' => score_cor($global),
+        'icone' => 'grafico',
+        'delta' => $tendencia['delta'],
+    ));
+    card_stat(array(
+        'titulo' => 'Metas concluidas',
+        'valor' => number_format($metasStats['pct'], 0) . '%',
+        'sub' => (int)$metasStats['concluida'] . ' de ' . (int)($metasStats['ativa'] + $metasStats['concluida']) . ' planejadas',
+        'cor' => '#22c55e',
+        'icone' => 'check',
+    ));
+    card_stat(array(
+        'titulo' => 'Consistencia',
+        'valor' => number_format($consistencia, 0) . '%',
+        'sub' => 'execucao dos compromissos (7 dias)',
+        'cor' => $consistencia >= 70 ? '#38bdf8' : '#fbbf24',
+        'icone' => 'raio',
+    ));
+    card_stat(array(
+        'titulo' => 'Qualidade dos dados',
+        'valor' => number_format($qualidade['pct'], 0) . '%',
+        'sub' => 'registros completos e na cadencia',
+        'cor' => $qualidade['pct'] >= 70 ? '#2dd4bf' : '#fb923c',
+        'icone' => 'cerebro',
+    ));
+    ?>
+</section>
+
+<section class="grid grid-2">
+    <?php
+    ob_start();
+    echo '<div class="diag-lista">';
+    foreach ($resumoDiag as $item) {
+        if ($item === null) { continue; }
+        echo '<div class="diag-item" style="--cor:' . $item['cor'] . '">'
+            . '<span class="diag-ico">' . icone($item['icone'], 18) . '</span>'
+            . '<div><span class="diag-titulo">' . e($item['titulo']) . '</span>'
+            . '<p>' . e($item['texto']) . '</p>'
+            . '<div class="diag-acoes"><a class="link-mini" href="/ranksistem/' . e(ltrim($item['link'], '/')) . '">abrir detalhe &rarr;</a>'
+            . '<a class="link-mini" href="/ranksistem/pages/metas.php">ver todos os diagnosticos</a></div>'
+            . '</div></div>';
+    }
+    echo '</div>';
+    $conteudo = ob_get_clean();
+    card_bloco('Diagnostico automatico', $conteudo, '#fbbf24', 'cerebro', 'gerado a partir dos dados atuais');
+    ?>
+
+    <?php
+    ob_start();
+    if (empty($proximas)) {
+        echo '<p class="muted">Nenhuma meta ativa. Defina uma melhoria em Metas e Ciclo para o sistema acompanhar o efeito no proximo ciclo.</p>';
+        echo '<a class="btn btn-primario btn-mini" href="/ranksistem/pages/metas.php">Criar primeira meta</a>';
+    } else {
+        echo '<div class="lista-simples">';
+        foreach ($proximas as $m) {
+            $cor = metas_cor($m['pilar']);
+            $vencida = !empty($m['prazo']) && $m['prazo'] < date('Y-m-d');
+            echo '<div class="item-simples">'
+                . '<span style="border-left:3px solid ' . $cor . '; padding-left:9px;">' . e($m['titulo']) . '</span>'
+                . '<span class="' . ($vencida ? 'meta-vencida' : 'muted') . '" style="white-space:nowrap">'
+                . e(ucfirst($m['etapa'])) . ($m['prazo'] ? ' · ' . date('d/m', strtotime($m['prazo'])) : '')
+                . '</span></div>';
+        }
+        echo '</div>';
+        echo '<p class="muted" style="margin-top:12px">Prioridade e ordenada por urgencia, prazo e etapa do ciclo.</p>';
+        echo '<a class="link-mini" href="/ranksistem/pages/metas.php">abrir metas e ciclo &rarr;</a>';
+    }
+    $conteudo = ob_get_clean();
+    card_bloco('Proximas prioridades', $conteudo, '#e879f9', 'alvo', count($proximas) . ' na fila');
+    ?>
 </section>
 
 <section class="grid grid-2">
@@ -149,8 +243,9 @@ require_once __DIR__ . '/../includes/header.php';
             $adesBoa = (float)$boa['adesao_media'];
             $adesBaixa = (float)$baixa['adesao_media'];
             $dif = round($adesBoa - $adesBaixa, 1);
+            $nTotal = (int)$boa['total'] + (int)$baixa['total'];
             echo '<div class="insight"><span class="insight-ico" style="--cor:#eab308">' . icone('sol', 18) . '</span>'
-                . '<p>Nas operacoes em dias com <strong>sono adequado</strong> sua adesao media ao plano foi <strong>' . number_format($adesBoa, 1, ',', '.') . '</strong> vs <strong>' . number_format($adesBaixa, 1, ',', '.') . '</strong> em dias de sono baixo. Diferenca de <strong>' . ($dif >= 0 ? '+' : '') . number_format($dif, 1, ',', '.') . '</strong>.</p></div>';
+                . '<p>Nas operacoes em dias com <strong>sono adequado</strong> sua adesao media ao plano foi <strong>' . number_format($adesBoa, 1, ',', '.') . '</strong> vs <strong>' . number_format($adesBaixa, 1, ',', '.') . '</strong> em dias de sono baixo. Diferenca de <strong>' . ($dif >= 0 ? '+' : '') . number_format($dif, 1, ',', '.') . '</strong> (N=' . $nTotal . ' operacoes). <a class="link-mini" href="/ranksistem/pages/correlacoes.php">investigar</a></p></div>';
         } else {
             echo '<div class="insight"><span class="insight-ico" style="--cor:#f472b6">' . icone('link', 18) . '</span>'
                 . '<p>Registre operacoes e check-ins diarios para o sistema cruzar sono e execucao automaticamente.</p></div>';
@@ -159,17 +254,70 @@ require_once __DIR__ . '/../includes/header.php';
         $comT = $corrEnergia['com_treino'];
         $semT = $corrEnergia['sem_treino'];
         if ($comT && $semT && $comT['media'] !== null && $semT['media'] !== null) {
+            $nT = (int)$comT['total'] + (int)$semT['total'];
             echo '<div class="insight"><span class="insight-ico" style="--cor:#fb923c">' . icone('halter', 18) . '</span>'
-                . '<p>Energia media em dias <strong>com treino</strong>: <strong>' . number_format((float)$comT['media'], 1, ',', '.') . '</strong> vs <strong>' . number_format((float)$semT['media'], 1, ',', '.') . '</strong> sem treino.</p></div>';
+                . '<p>Energia media em dias <strong>com treino</strong>: <strong>' . number_format((float)$comT['media'], 1, ',', '.') . '</strong> vs <strong>' . number_format((float)$semT['media'], 1, ',', '.') . '</strong> sem treino (N=' . $nT . ' check-ins). <a class="link-mini" href="/ranksistem/pages/correlacoes.php">investigar</a></p></div>';
         } else {
             echo '<div class="insight"><span class="insight-ico" style="--cor:#fb923c">' . icone('halter', 18) . '</span>'
                 . '<p>Registre treinos e check-ins para medir o impacto da calistenia na sua energia.</p></div>';
+        }
+
+        if ($qualidade['pct'] < 70) {
+            echo '<div class="insight"><span class="insight-ico" style="--cor:#fb923c">' . icone('cerebro', 18) . '</span>'
+                . '<p>Qualidade dos dados em <strong>' . number_format($qualidade['pct'], 0) . '%</strong>: alguns indicadores tem pouca confianca. Confira quais serie estao incompletas em Metas e Ciclo &rarr; Motor de diagnostico.</p></div>';
         }
         ?>
     </div>
     <?php
     $conteudo = ob_get_clean();
     card_bloco('Leituras automaticas', $conteudo, '#a78bfa', 'cerebro');
+    ?>
+</section>
+
+<section class="grid grid-2">
+    <?php
+    ob_start();
+    echo '<div class="formula-lista">';
+    ?>
+    <div class="formula-item">
+        <strong>Eficiencia global</strong>
+        <span>Soma dos scores dos pilares ponderada pelos pesos configurados. Nao e media simples das metricas individuais.</span>
+        <code>E_global = SUM(score_pilar_i * peso_i) / SUM(peso_i)</code>
+    </div>
+    <div class="formula-item">
+        <strong>Financeiro</strong>
+        <span>Taxa de acerto, adesao ao plano, profit factor e execucao perfeita pesam mais quando ha operacoes; a variacao das contas entra como complemento.</span>
+        <code>trading = WR*0,30 + (adesao*10)*0,25 + min(PF/2,1)*100*0,25 + execucao_perfeita*0,20
+score = trading*0,7 + variacao_consolidada_normalizada*0,3</code>
+    </div>
+    <div class="formula-item">
+        <strong>Academico</strong>
+        <span>Horas sozias nao contam: progresso de modulos, consistencia de sessoes e retencao em revisoes.</span>
+        <code>score = conclusao*0,40 + consistencia*0,30 + retencao*0,30</code>
+    </div>
+    <div class="formula-item">
+        <strong>Fisico</strong>
+        <span>Volume, dificuldade e esforco sao registrados separados; a progressao tecnica entra com peso proprio.</span>
+        <code>score = consistencia*0,30 + sobrecarga*0,25 + prontidao*0,25 + progressao*0,20</code>
+    </div>
+    <div class="formula-item">
+        <strong>Social</strong>
+        <span>Frequencia de conexoes, recarga percebida e tempo de convivencia. Nao premia quantidade sem qualidade.</span>
+        <code>score = conexoes*0,40 + recarga*0,30 + tempo*0,30</code>
+    </div>
+    <div class="formula-item">
+        <strong>Qualidade dos dados</strong>
+        <span>Compara o que foi registrado na cadencia esperada dos ultimos 30 dias e a completude dos campos que alimentam metricas. Ausencia de registro vira alerta de dados insuficientes, nao nota baixa.</span>
+        <code>qualidade = media(checkin, estudos, treinos, social, completude)</code>
+    </div>
+    <div class="formula-item">
+        <strong>Confianca do diagnostico</strong>
+        <span>Cada alerta declara N, periodo e confianca. Amostra pequena e rotulada como confianca baixa: resultado observado nao garante resultado futuro.</span>
+    </div>
+    <?php
+    echo '</div>';
+    $conteudo = ob_get_clean();
+    card_bloco('Como os numeros foram calculados', $conteudo, '#38bdf8', 'livro', 'explicabilidade');
     ?>
 </section>
 

@@ -5,12 +5,13 @@ $page_sub = isset($page_sub) ? $page_sub : '';
 $active = isset($active) ? $active : 'dashboard';
 
 $nav_itens = array(
-    'dashboard'   => array('titulo' => 'Visao Geral',   'url' => '/ranksistem/index.php',              'icone' => 'grafico',  'cor' => '#38bdf8'),
+   // 'dashboard'   => array('titulo' => 'Visao Geral',   'url' => '/ranksistem/index.php',              'icone' => 'grafico',  'cor' => '#38bdf8'),
     'financeiro'  => array('titulo' => 'Financeiro',    'url' => '/ranksistem/pages/financeiro.php',   'icone' => 'carteira', 'cor' => '#22c55e'),
     'academico'   => array('titulo' => 'Academico',     'url' => '/ranksistem/pages/academico.php',    'icone' => 'livro',    'cor' => '#a78bfa'),
     'fisico'      => array('titulo' => 'Fisico',        'url' => '/ranksistem/pages/fisico.php',       'icone' => 'halter',   'cor' => '#fb923c'),
-    'social'      => array('titulo' => 'Social',        'url' => '/ranksistem/pages/social.php',       'icone' => 'pessoas',  'cor' => '#2dd4bf'),
-    'correlacoes' => array('titulo' => 'Correlacoes',   'url' => '/ranksistem/pages/correlacoes.php',  'icone' => 'link',     'cor' => '#f472b6'),
+   //'social'      => array('titulo' => 'Social',        'url' => '/ranksistem/pages/social.php',       'icone' => 'pessoas',  'cor' => '#2dd4bf'),
+   //'correlacoes' => array('titulo' => 'Correlacoes',   'url' => '/ranksistem/pages/correlacoes.php',  'icone' => 'link',     'cor' => '#f472b6'),
+   //'metas'       => array('titulo' => 'Metas e Ciclo', 'url' => '/ranksistem/pages/metas.php',       'icone' => 'chama',    'cor' => '#e879f9'),
     'cadastros'   => array('titulo' => 'Cadastros',     'url' => '/ranksistem/pages/cadastros.php',    'icone' => 'alvo',     'cor' => '#fbbf24'),
 );
 ?>
@@ -57,7 +58,14 @@ $nav_itens = array(
                 <h1><?php echo e($page_title); ?></h1>
                 <?php if ($page_sub !== ''): ?><p class="topo-sub"><?php echo e($page_sub); ?></p><?php endif; ?>
             </div>
-            <div class="topo-data"><?php echo date('d/m/Y'); ?></div>
+            <div class="topo-acoes">
+                <button type="button" class="btn-privado" id="btnPrivado" aria-pressed="false"
+                    title="Oculta os valores monetarios absolutos na tela (percentuais continuam visiveis)">
+                    <span class="btn-privado-ico" aria-hidden="true">◉</span>
+                    <span class="btn-privado-txt">Valores absolutos</span>
+                </button>
+                <div class="topo-data"><?php echo date('d/m/Y'); ?></div>
+            </div>
         </header>
         <?php flash_render(); ?>
         <div class="pagina">

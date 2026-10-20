@@ -118,7 +118,7 @@ require_once __DIR__ . '/../includes/header.php';
             '<a class="link-del" href="/ranksistem/controllers/socialController.php?acao=del_registro&id=' . (int)$r['id'] . '" onclick="return confirm(\'Remover registro?\')">' . icone('lixo', 16) . '</a>'
         );
     }
-    tabela(array('Data', 'Tipo', 'Descricao', 'Duracao', 'Qualidade', ''), $rows);
+    tabela(array('Data', 'Tipo', 'Descricao', 'Duracao', 'Qualidade', ''), $rows, 'Nenhum registro social.', array('data_table' => true, 'id' => 'tabelaSocial', 'placeholder' => 'Pesquisar por descricao, tipo, data...', 'busca' => isset($_GET['q']) ? trim((string)$_GET['q']) : ''));
     $conteudo = ob_get_clean();
     card_bloco('Registros sociais', $conteudo, '#2dd4bf', 'pessoas');
     ?>

@@ -33,7 +33,7 @@ if (!function_exists('icone')) {
 }
 
 if (!function_exists('card_stat')) {
-    // $opts: titulo, valor, sub, cor, icone, delta (numerico, opcional)
+    // $opts: titulo, valor, sub, cor, icone, delta (numerico, opcional), drill (chave do detalhamento, opcional)
     function card_stat($opts)
     {
         $cor = isset($opts['cor']) ? $opts['cor'] : '#38bdf8';
@@ -45,7 +45,13 @@ if (!function_exists('card_stat')) {
             $sinal = $delta >= 0 ? '+' : '';
             $deltaHtml = '<span class="stat-delta ' . $classe . '">' . $sinal . number_format($delta, 1, ',', '.') . '%</span>';
         }
-        echo '<div class="card card-stat" style="--cor:' . e($cor) . '">'
+        $drill = isset($opts['drill']) && $opts['drill'] !== '' ? (string)$opts['drill'] : '';
+        $attrDrill = '';
+        if ($drill !== '') {
+            $attrDrill = ' data-drill="' . e($drill) . '" role="button" tabindex="0"'
+                . ' aria-label="Ver a origem dos dados de ' . e(isset($opts['titulo']) ? $opts['titulo'] : $drill) . '"';
+        }
+        echo '<div class="card card-stat' . ($drill !== '' ? ' drillable' : '') . '" style="--cor:' . e($cor) . '"' . $attrDrill . '>'
             . '<div class="stat-ico">' . $icone . '</div>'
             . '<div class="stat-info">'
             . '<span class="stat-titulo">' . e(isset($opts['titulo']) ? $opts['titulo'] : '') . '</span>'
@@ -95,17 +101,21 @@ if (!function_exists('badge')) {
 
 if (!function_exists('tabela')) {
     // $headers: array de strings. $rows: array de arrays (celulas ja em HTML ou texto)
-    // $opts: data_table (bool), id (string), placeholder (string)
+    // $opts: data_table (bool), id (string), placeholder (string), busca (string - filtro inicial)
     function tabela($headers, $rows, $vazio = 'Nenhum registro encontrado.', $opts = array())
     {
         $dataTable = !empty($opts['data_table']);
         $id = isset($opts['id']) ? $opts['id'] : '';
         $placeholder = isset($opts['placeholder']) ? $opts['placeholder'] : 'Pesquisar...';
+        $busca = isset($opts['busca']) ? (string)$opts['busca'] : '';
 
         if ($dataTable) {
             echo '<div class="tabela-dt" data-tabela>';
             echo '<div class="tabela-barra">';
-            echo '<input type="search" class="tabela-pesquisa" placeholder="' . e($placeholder) . '" aria-label="Pesquisar na tabela">';
+            if ($busca !== '') {
+                echo '<span class="tabela-filtro">Filtro da investigacao: <strong>' . e($busca) . '</strong> <a class="link-mini" href="?">limpar</a></span>';
+            }
+            echo '<input type="search" class="tabela-pesquisa" value="' . e($busca) . '" placeholder="' . e($placeholder) . '" aria-label="Pesquisar na tabela">';
             echo '<label class="tabela-exibir">Exibir <select class="tabela-por-pagina" aria-label="Itens por pagina">';
             foreach (array(10, 25, 50, 100) as $n) {
                 echo '<option value="' . $n . '"' . ($n === 10 ? ' selected' : '') . '>' . $n . '</option>';
@@ -193,6 +203,26 @@ if (!function_exists('form_campo')) {
             echo '<input id="' . $id . '" type="' . e($tipo) . '" name="' . e($name) . '" value="' . e($value) . '"' . $required . $attrs . '>';
         }
         echo '</div>';
+    }
+}
+
+if (!function_exists('drill_modal')) {
+    // Modal unico de detalhamento: cards com data-drill abrem aqui (dados via ?drill=chave em JSON)
+    function drill_modal()
+    {
+        echo '<div class="drill-modal" id="drillModal" hidden>'
+            . '<div class="drill-fundo" data-drill-fechar></div>'
+            . '<div class="drill-caixa" role="dialog" aria-modal="true" aria-labelledby="drillTitulo">'
+            . '<div class="drill-head">'
+            . '<div class="drill-titulos">'
+            . '<h3 id="drillTitulo">Origem dos dados</h3>'
+            . '<p id="drillNota"></p>'
+            . '</div>'
+            . '<button type="button" class="drill-fechar" data-drill-fechar aria-label="Fechar detalhamento">&times;</button>'
+            . '</div>'
+            . '<div class="drill-corpo" id="drillCorpo"></div>'
+            . '</div>'
+            . '</div>';
     }
 }
 

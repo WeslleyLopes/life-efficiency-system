@@ -80,7 +80,8 @@ require_once __DIR__ . '/../includes/header.php';
         $mods = isset($modulosPorMateria[$mat['id']]) ? $modulosPorMateria[$mat['id']] : array();
         echo '<div class="materia-bloco" style="--cor:' . e($mat['cor']) . '">';
         echo '<div class="materia-head"><span class="materia-icone">' . icone('livro', 20) . '</span><h4>' . e($mat['nome']) . '</h4>'
-            . '<span class="materia-qtd">' . count($mods) . ' modulos</span></div>';
+            . '<span class="materia-qtd">' . count($mods) . ' modulos</span>'
+            . '<a class="link-mini" style="margin-left:10px" href="/ranksistem/pages/academico.php?q=' . urlencode($mat['nome']) . '">ver sessoes &rarr;</a></div>';
         if (empty($mods)) {
             echo '<p class="muted">Nenhum modulo cadastrado para esta materia.</p>';
         }
@@ -143,7 +144,7 @@ require_once __DIR__ . '/../includes/header.php';
             e($es['resumo'] ? mb_strimwidth($es['resumo'], 0, 60, '...') : '')
         );
     }
-    tabela(array('Data', 'Materia', 'Modulo', 'Tempo', 'Retencao', 'Resumo'), $rows);
+    tabela(array('Data', 'Materia', 'Modulo', 'Tempo', 'Retencao', 'Resumo'), $rows, 'Nenhuma sessao registrada.', array('data_table' => true, 'id' => 'tabelaSessoes', 'placeholder' => 'Pesquisar por materia, modulo, resumo...', 'busca' => isset($_GET['q']) ? trim((string)$_GET['q']) : ''));
     $conteudo = ob_get_clean();
     card_bloco('Ultimas sessoes', $conteudo, '#2dd4bf', 'grafico');
     ?>
